@@ -303,10 +303,17 @@ html, body, #root {
 /* ── Composer ────────────────────────────────────────────────────────────── */
 .composer {
   display: flex;
+  flex-direction: column;
   gap: 8px;
-  padding: 16px 24px;
+  padding: 12px 24px 16px;
   border-top: 1px solid var(--border);
   background: var(--bg-secondary);
+}
+
+.composer-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
 }
 
 .composer textarea {
@@ -324,6 +331,19 @@ html, body, #root {
 }
 .composer textarea:focus { border-color: var(--accent); }
 .composer textarea:disabled { opacity: 0.5; }
+
+.attach-button {
+  padding: 10px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 18px;
+  align-self: flex-end;
+  transition: border-color 0.15s, background 0.15s;
+}
+.attach-button:hover:not(:disabled) { border-color: var(--accent); background: var(--bg-hover); }
+.attach-button:disabled { opacity: 0.5; cursor: default; }
 
 .send-button {
   padding: 10px 20px;
@@ -789,4 +809,68 @@ html, body, #root {
   padding-left: 12px;
   margin: 8px 0;
   color: var(--text-secondary);
+}
+
+/* ── Attachments ─────────────────────────────────────────────────────────── */
+.attachment-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px 0;
+}
+
+.attachment-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 12px;
+  max-width: 200px;
+}
+.attachment-chip.uploading { border-color: var(--accent); }
+.attachment-chip.attached { border-color: var(--green, #4caf50); }
+.attachment-chip.error { border-color: var(--red, #ef5350); }
+
+.chip-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+.chip-icon { font-size: 16px; }
+.chip-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+.chip-status { font-size: 12px; }
+.chip-remove {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0 2px;
+  font-size: 12px;
+}
+.chip-remove:hover { color: var(--red, #ef5350); }
+
+/* Drag-and-drop overlay */
+.messages-container.dragging {
+  border: 2px dashed var(--accent);
+  background: rgba(255, 191, 0, 0.05);
+}
+.messages-container.dragging::after {
+  content: "📁 Drop files to attach";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 18px;
+  color: var(--accent);
+  pointer-events: none;
+  z-index: 10;
 }

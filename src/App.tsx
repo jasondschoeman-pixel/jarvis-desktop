@@ -48,6 +48,17 @@ interface ChatMessage {
   toolName?: string;
 }
 
+interface PendingAttachment {
+  id: string;
+  name: string;
+  size: number;
+  type: string;       // mime type
+  dataUrl: string;    // base64 data URL
+  status: 'uploading' | 'attached' | 'error';
+  error?: string;
+  previewUrl?: string; // for image thumbnails
+}
+
 type View = 'chat' | 'kanban' | 'sessions' | 'settings';
 
 const MAX_RECONNECT_ATTEMPTS = 10;
@@ -90,6 +101,7 @@ export default function App() {
   const [updateStatus, setUpdateStatus] = useState<{ status: string; message: string; version?: string; percent?: number } | null>(null);
   const [statusInfo, setStatusInfo] = useState<any>(null);
   const [resuming, setResuming] = useState(false);  // Loading state for session resume
+  const [attachments, setAttachments] = useState<PendingAttachment[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const sessionIdRef = useRef<string | null>(null);
@@ -103,6 +115,7 @@ export default function App() {
   const streamingMsgIdRef = useRef<string | null>(null);  // Bug 1 fix: track streaming message by ID
   const msgCounterRef = useRef(0);  // Bug 11 fix: unique IDs
   const loadSessionsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingAttachMapRef = useRef<Record<string, string>>({});  // attachId → attId
 
   // Bug 11 fix: unique message ID generator
   function nextMsgId(prefix: string): string {
@@ -344,6 +357,26 @@ export default function App() {
             setSessions(mapped);
           }
           pendingListIdRef.current = null;
+        }
+        // Handle file/image attachment responses
+        const attId = pendingAttachMapRef.current[frame.id];
+        if (attId) {
+          if (frame.result?.attached) {
+            setAttachments(prev => prev.map(a =>
+              a.id === attId ? { ...a, status: 'attached' } : a
+            ));
+          } else if (frame.error) {
+            setAttachments(prev => prev.map(a =>
+              a.id === attId ? { ...a, status: 'error', error: frame.error.message } : a
+            ));
+            setMessages(prev => [...prev, {
+              id: nextMsgId('att-err'),
+              role: 'system',
+              content: `❌ Attachment failed: ${frame.error.message}`,
+              timestamp: Date.now() / 1000,
+            }]);
+          }
+          delete pendingAttachMapRef.current[frame.id];
         }
         // Show JSON-RPC errors to the user
         if (frame.error) {
@@ -694,13 +727,25 @@ export default function App() {
     const text = input.trim();
     setInput('');
 
+    // Build display text (include attachment names if any)
+    const attachedNames = attachments
+      .filter(a => a.status === 'attached')
+      .map(a => a.name);
+    const displayText = attachedNames.length > 0
+      ? `${text}\n\n[Attached: ${attachedNames.join(', ')}]`
+      : text;
+
     setMessages(prev => [...prev, {
       id: nextMsgId('user'),
       role: 'user',
-      content: text,
+      content: displayText,
       timestamp: Date.now() / 1000,
       kind: 'text',
     }]);
+
+    // Clear attachments after sending
+    setAttachments([]);
+    pendingAttachMapRef.current = {};
 
     const request = {
       jsonrpc: '2.0',
@@ -737,6 +782,127 @@ export default function App() {
     setMessages(prev => prev.map(msg =>
       msg.pending ? { ...msg, pending: false } : msg
     ));
+  }
+
+  // ── File Attachments ─────────────────────────────────────────────────────
+
+  function readFileAsDataUrl(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  const IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp', 'image/bmp']);
+  const MAX_IMAGE_BYTES = 25 * 1024 * 1024;  // 25 MB
+  const MAX_FILE_BYTES = 50 * 1024 * 1024;   // 50 MB
+
+  async function handleFileSelect(files: FileList | File[]) {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      setError('Cannot attach files — WebSocket not connected');
+      return;
+    }
+    if (!sessionIdRef.current) {
+      setError('No active session — wait for connection');
+      return;
+    }
+
+    for (const file of Array.from(files)) {
+      const attId = nextMsgId('att');
+      const isImage = IMAGE_TYPES.has(file.type) || file.type.startsWith('image/');
+      const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+
+      // Size check
+      const maxSize = isImage ? MAX_IMAGE_BYTES : MAX_FILE_BYTES;
+      if (file.size > maxSize) {
+        setMessages(prev => [...prev, {
+          id: nextMsgId('att-err'),
+          role: 'system',
+          content: `❌ ${file.name} is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Max: ${maxSize / 1024 / 1024} MB`,
+          timestamp: Date.now() / 1000,
+        }]);
+        continue;
+      }
+
+      // Read file as data URL
+      let dataUrl: string;
+      try {
+        dataUrl = await readFileAsDataUrl(file);
+      } catch (err: any) {
+        setMessages(prev => [...prev, {
+          id: nextMsgId('att-err'),
+          role: 'system',
+          content: `❌ Failed to read ${file.name}: ${err.message}`,
+          timestamp: Date.now() / 1000,
+        }]);
+        continue;
+      }
+
+      // Add to pending attachments (with preview for images)
+      const att: PendingAttachment = {
+        id: attId,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        dataUrl,
+        status: 'uploading',
+        previewUrl: isImage ? dataUrl : undefined,
+      };
+      setAttachments(prev => [...prev, att]);
+
+      // Send the appropriate WS method
+      const attachId = nextMsgId('attach');
+      let method: string;
+      let params: any;
+
+      if (isImage) {
+        method = 'image.attach_bytes';
+        params = {
+          session_id: sessionIdRef.current,
+          content_base64: dataUrl,
+          filename: file.name,
+        };
+      } else if (isPdf) {
+        method = 'pdf.attach';
+        params = {
+          session_id: sessionIdRef.current,
+          content_base64: dataUrl,
+          filename: file.name,
+        };
+      } else {
+        method = 'file.attach';
+        params = {
+          session_id: sessionIdRef.current,
+          path: file.name,
+          data_url: dataUrl,
+          name: file.name,
+        };
+      }
+
+      try {
+        wsRef.current.send(JSON.stringify({
+          jsonrpc: '2.0',
+          id: attachId,
+          method,
+          params,
+        }));
+      } catch (err: any) {
+        setAttachments(prev => prev.map(a =>
+          a.id === attId ? { ...a, status: 'error', error: err.message } : a
+        ));
+        continue;
+      }
+
+      // We'll update the attachment status when the WS response comes back
+      // Store the attachId → attId mapping so the response handler can find it
+      pendingAttachMapRef.current[attachId] = attId;
+    }
+  }
+
+  function removeAttachment(id: string) {
+    setAttachments(prev => prev.filter(a => a.id !== id));
   }
 
   // ── Auto-scroll ─────────────────────────────────────────────────────────
@@ -804,6 +970,9 @@ export default function App() {
             activeProfile={activeProfile}
             onStop={stopStreaming}
             connected={connected}
+            attachments={attachments}
+            onFileSelect={handleFileSelect}
+            onRemoveAttachment={removeAttachment}
           />
         )}
         {view === 'kanban' && (
@@ -910,14 +1079,20 @@ function Sidebar({
 
 function ChatView({
   messages, input, setInput, sendMessage, streaming, messagesEndRef, activeProfile,
-  onStop, connected
+  onStop, connected, attachments, onFileSelect, onRemoveAttachment
 }: {
   messages: ChatMessage[]; input: string; setInput: (s: string) => void;
   sendMessage: () => void; streaming: boolean;
   messagesEndRef: React.RefObject<HTMLDivElement>; activeProfile: string;
   onStop: () => void; connected: boolean;
+  attachments: PendingAttachment[];
+  onFileSelect: (files: FileList | File[]) => void;
+  onRemoveAttachment: (id: string) => void;
 }) {
   const [showThinking, setShowThinking] = useState<Record<string, boolean>>({});
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dragCounterRef = useRef(0);
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -937,7 +1112,20 @@ function ChatView({
         <h2>Chat — {activeProfile}</h2>
       </div>
 
-      <div className="messages-container">
+      <div
+        className={`messages-container ${isDragging ? 'dragging' : ''}`}
+        onDragEnter={(e) => { e.preventDefault(); dragCounterRef.current++; setIsDragging(true); }}
+        onDragLeave={(e) => { e.preventDefault(); dragCounterRef.current--; if (dragCounterRef.current <= 0) { setIsDragging(false); dragCounterRef.current = 0; } }}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => {
+          e.preventDefault();
+          dragCounterRef.current = 0;
+          setIsDragging(false);
+          if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            onFileSelect(e.dataTransfer.files);
+          }
+        }}
+      >
         {messages.length === 0 && (
           <div className="empty-chat">
             <p>Send a message to start chatting with {activeProfile}</p>
@@ -1022,27 +1210,71 @@ function ChatView({
       </div>
 
       <div className="composer">
-        <textarea
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={connected ? "Type a message..." : "Connecting..."}
-          rows={3}
-          disabled={streaming || !connected}
-        />
-        {streaming ? (
-          <button className="stop-button" onClick={onStop}>
-            ⏹ Stop
-          </button>
-        ) : (
-          <button
-            className="send-button"
-            onClick={sendMessage}
-            disabled={!input.trim() || !connected}
-          >
-            Send
-          </button>
+        {/* Attachment chips */}
+        {attachments.length > 0 && (
+          <div className="attachment-chips">
+            {attachments.map(att => (
+              <div key={att.id} className={`attachment-chip ${att.status}`}>
+                {att.previewUrl ? (
+                  <img src={att.previewUrl} alt={att.name} className="chip-thumb" />
+                ) : (
+                  <span className="chip-icon">
+                    {att.type.startsWith('image/') ? '🖼️' : att.type === 'application/pdf' ? '📄' : '📎'}
+                  </span>
+                )}
+                <span className="chip-name">{att.name}</span>
+                {att.status === 'uploading' && <span className="chip-status">⏳</span>}
+                {att.status === 'attached' && <span className="chip-status">✅</span>}
+                {att.status === 'error' && <span className="chip-status" title={att.error}>❌</span>}
+                <button className="chip-remove" onClick={() => onRemoveAttachment(att.id)}>✕</button>
+              </div>
+            ))}
+          </div>
         )}
+        <div className="composer-row">
+          {/* Hidden file input */}
+          <input
+            type="file"
+            ref={fileInputRef}
+            style={{ display: 'none' }}
+            multiple
+            onChange={(e) => {
+              if (e.target.files && e.target.files.length > 0) {
+                onFileSelect(e.target.files);
+                e.target.value = '';  // Reset so same file can be selected again
+              }
+            }}
+          />
+          <button
+            className="attach-button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={streaming || !connected}
+            title="Attach files"
+          >
+            📎
+          </button>
+          <textarea
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={connected ? "Type a message..." : "Connecting..."}
+            rows={3}
+            disabled={streaming || !connected}
+          />
+          {streaming ? (
+            <button className="stop-button" onClick={onStop}>
+              ⏹ Stop
+            </button>
+          ) : (
+            <button
+              className="send-button"
+              onClick={sendMessage}
+              disabled={(!input.trim() && attachments.length === 0) || !connected}
+            >
+              Send
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
