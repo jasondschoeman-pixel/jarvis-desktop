@@ -1,0 +1,16 @@
+[Unit]
+Description=Jarvis Desktop Kanban Proxy
+After=network.target
+
+[Service]
+Type=simple
+User=jason
+WorkingDirectory=/home/jason/jarvis-desktop
+ExecStart=/home/jason/.local/bin/node /home/jason/jarvis-desktop/kanban-proxy/server.js
+Restart=on-failure
+RestartSec=5
+Environment=HERMES_HOME=/home/jason/.hermes
+Environment=PATH=/home/jason/.local/bin:/usr/local/bin:/usr/bin:/bin
+
+[Install]
+WantedBy=multi-user.target

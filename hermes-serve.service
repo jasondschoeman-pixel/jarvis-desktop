@@ -1,0 +1,16 @@
+[Unit]
+Description=Hermes Serve Backend (JSON-RPC/WebSocket for Desktop)
+After=network.target
+
+[Service]
+Type=simple
+User=jason
+WorkingDirectory=/home/jason
+ExecStart=/home/jason/.hermes/hermes-agent/venv/bin/python3 /home/jason/.local/bin/hermes serve --port 9119 --host 0.0.0.0 --skip-build
+Restart=on-failure
+RestartSec=5
+Environment=HERMES_HOME=/home/jason/.hermes
+Environment=PATH=/home/jason/.local/bin:/usr/local/bin:/usr/bin:/bin
+
+[Install]
+WantedBy=multi-user.target
