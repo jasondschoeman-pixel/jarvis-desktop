@@ -306,7 +306,10 @@ export default function App() {
                 history.push({
                   id: nextMsgId(`hist-${m.role}`),
                   role: m.role,
-                  content: m.content || '',
+                  // Server uses 'text' not 'content' for message text
+                  content: m.text || m.content || '',
+                  // Server uses 'reasoning'/'reasoning_content' for thinking
+                  thinkingContent: m.reasoning || m.reasoning_content || '',
                   timestamp: m.timestamp || Date.now() / 1000,
                   kind: 'text',
                 });
