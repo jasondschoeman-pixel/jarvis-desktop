@@ -542,9 +542,26 @@ html, body, #root {
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, background 0.15s;
+  position: relative;
 }
-.session-card:hover { border-color: var(--accent); }
+.session-card.clickable { cursor: pointer; }
+.session-card.clickable:hover { border-color: var(--accent); background: var(--bg-tertiary); }
+
+.session-loading {
+  font-size: 12px;
+  color: var(--accent);
+  margin-top: 8px;
+  font-style: italic;
+}
+.session-resume-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 6px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.session-card:hover .session-resume-hint { opacity: 1; }
 
 .session-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
 .session-preview { font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; }

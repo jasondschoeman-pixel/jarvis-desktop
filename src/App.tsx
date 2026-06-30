@@ -89,10 +89,13 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [updateStatus, setUpdateStatus] = useState<{ status: string; message: string; version?: string; percent?: number } | null>(null);
   const [statusInfo, setStatusInfo] = useState<any>(null);
+  const [resuming, setResuming] = useState(false);  // Loading state for session resume
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const pendingCreateIdRef = useRef<string | null>(null);
+  const pendingResumeIdRef = useRef<string | null>(null);  // Track session.resume response
+  const pendingListIdRef = useRef<string | null>(null);  // Track session.list response
   const activeProfileRef = useRef('default');
   const reconnectAttemptsRef = useRef(0);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -164,10 +167,7 @@ export default function App() {
       const statusData = await window.jarvis.api.request('GET', '/api/status');
       setStatusInfo(statusData);
 
-      // Fetch sessions
-      await loadSessions();
-
-      // Connect WebSocket
+      // Connect WebSocket — socket.onopen will call loadSessions() for the active profile
       await connectWs();
 
       // Bug 7 fix: Don't set connected=true here — socket.onopen handles it
@@ -215,6 +215,8 @@ export default function App() {
           method: 'session.create',
           params: { profile: profile || activeProfileRef.current },
         }));
+        // Load sessions for this profile now that WS is connected
+        loadSessions();
       };
 
       socket.onmessage = (event) => {
@@ -281,7 +283,7 @@ export default function App() {
     try {
       const frame = JSON.parse(raw);
 
-      // JSON-RPC response (has id) — check for session.create response
+      // JSON-RPC response (has id) — check for session.create or session.resume response
       if (frame.id != null) {
         if (frame.id === pendingCreateIdRef.current) {
           if (frame.result?.session_id) {
@@ -289,6 +291,56 @@ export default function App() {
             console.log('Session created:', sessionIdRef.current);
           }
           pendingCreateIdRef.current = null;
+        }
+        // Capture the new live session_id from session.resume response
+        if (frame.id === pendingResumeIdRef.current) {
+          if (frame.result?.session_id) {
+            sessionIdRef.current = frame.result.session_id;
+            console.log('Session resumed, live session_id:', sessionIdRef.current);
+          }
+          // session.resume returns messages in the result — load them into chat
+          if (frame.result?.messages) {
+            const history: ChatMessage[] = [];
+            for (const m of frame.result.messages) {
+              if (m.role === 'user' || m.role === 'assistant') {
+                history.push({
+                  id: nextMsgId(`hist-${m.role}`),
+                  role: m.role,
+                  content: m.content || '',
+                  timestamp: m.timestamp || Date.now() / 1000,
+                  kind: 'text',
+                });
+              }
+            }
+            setMessages(history);
+          }
+          if (frame.error) {
+            setMessages(prev => [...prev, {
+              id: nextMsgId('resume-err'),
+              role: 'system',
+              content: `❌ Failed to resume: ${frame.error.message || 'Unknown error'}`,
+              timestamp: Date.now() / 1000,
+              error: frame.error.message,
+            }]);
+          }
+          pendingResumeIdRef.current = null;
+        }
+        // Capture session.list response (profile-scoped sessions)
+        if (frame.id === pendingListIdRef.current) {
+          if (frame.result?.sessions) {
+            // Map WS session format to our Session interface
+            const mapped: Session[] = frame.result.sessions.map((s: any) => ({
+              id: s.id,
+              title: s.title || '',
+              preview: s.preview || '',
+              model: '',
+              message_count: s.message_count || 0,
+              last_active: s.started_at || s.last_active || 0,
+              archived: false,
+            }));
+            setSessions(mapped);
+          }
+          pendingListIdRef.current = null;
         }
         // Show JSON-RPC errors to the user
         if (frame.error) {
@@ -506,13 +558,81 @@ export default function App() {
 
   // ── Load Data ────────────────────────────────────────────────────────────
 
+  // Load sessions via WebSocket (profile-scoped) with REST fallback
   async function loadSessions() {
+    // Try WebSocket first (supports profile scoping)
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      const listId = nextMsgId('list');
+      pendingListIdRef.current = listId;
+      try {
+        wsRef.current.send(JSON.stringify({
+          jsonrpc: '2.0',
+          id: listId,
+          method: 'session.list',
+          params: {
+            profile: activeProfileRef.current,
+            limit: 50,
+          },
+        }));
+      } catch (err) {
+        console.error('Failed to send session.list:', err);
+        pendingListIdRef.current = null;
+        // Fallback to REST API
+        await loadSessionsViaRest();
+      }
+      return;
+    }
+    // Fallback to REST API if WebSocket not connected
+    await loadSessionsViaRest();
+  }
+
+  async function loadSessionsViaRest() {
     try {
       const data = await window.jarvis.api.request('GET', '/api/sessions?limit=20&archived=exclude');
       if (!isMountedRef.current) return;
       if (data?.sessions) setSessions(data.sessions);
     } catch (err) {
       console.error('Failed to load sessions:', err);
+    }
+  }
+
+  // ── Resume Session ──────────────────────────────────────────────────────
+
+  async function resumeSession(sessionId: string) {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      setError('Cannot resume — WebSocket not connected');
+      return;
+    }
+
+    setResuming(true);
+    try {
+      // Send session.resume on WebSocket — the response handler captures
+      // the new live session_id AND loads message history from the result
+      const resumeId = nextMsgId('resume');
+      pendingResumeIdRef.current = resumeId;
+      wsRef.current.send(JSON.stringify({
+        jsonrpc: '2.0',
+        id: resumeId,
+        method: 'session.resume',
+        params: {
+          session_id: sessionId,
+          profile: activeProfileRef.current,
+        },
+      }));
+
+      // Clear current messages (history will be loaded by the response handler)
+      setMessages([]);
+      setStreaming(false);
+      streamingRef.current = false;
+      streamingMsgIdRef.current = null;
+      setView('chat');
+      setError(null);
+    } catch (err: any) {
+      if (isMountedRef.current) {
+        setError('Failed to resume session: ' + (err.message || 'unknown'));
+      }
+    } finally {
+      if (isMountedRef.current) setResuming(false);
     }
   }
 
@@ -694,7 +814,7 @@ export default function App() {
           />
         )}
         {view === 'sessions' && (
-          <SessionsView sessions={sessions} refresh={loadSessions} />
+          <SessionsView sessions={sessions} refresh={loadSessions} onResume={resumeSession} resuming={resuming} />
         )}
         {view === 'settings' && (
           <SettingsView
@@ -1045,8 +1165,9 @@ function KanbanView({
 
 // ── Sessions View ──────────────────────────────────────────────────────────
 
-function SessionsView({ sessions, refresh }: {
+function SessionsView({ sessions, refresh, onResume, resuming }: {
   sessions: Session[]; refresh: () => void;
+  onResume: (sessionId: string) => void; resuming: boolean;
 }) {
   return (
     <div className="sessions-view">
@@ -1056,7 +1177,12 @@ function SessionsView({ sessions, refresh }: {
       </div>
       <div className="sessions-list">
         {sessions.map(s => (
-          <div key={s.id} className="session-card">
+          <div
+            key={s.id}
+            className="session-card clickable"
+            onClick={() => !resuming && onResume(s.id)}
+            style={{ opacity: resuming ? 0.5 : 1, cursor: resuming ? 'wait' : 'pointer' }}
+          >
             <div className="session-title">{s.title || 'Untitled'}</div>
             <div className="session-preview">{s.preview}</div>
             <div className="session-meta">
@@ -1064,6 +1190,8 @@ function SessionsView({ sessions, refresh }: {
               <span>{s.message_count} messages</span>
               <span>{new Date(s.last_active * 1000).toLocaleString()}</span>
             </div>
+            {resuming && <div className="session-loading">Resuming...</div>}
+            {!resuming && <div className="session-resume-hint">Click to resume →</div>}
           </div>
         ))}
         {sessions.length === 0 && (
@@ -1107,7 +1235,7 @@ function SettingsView({ profiles, activeProfile, statusInfo, updateStatus, onChe
         <h3>Updates</h3>
         <div className="settings-row">
           <span>App Version</span>
-          <code>v1.1.0</code>
+          <code>v1.2.2</code>
         </div>
         {updateStatus && (
           <div className={`settings-row update-banner update-${updateStatus.status}`}>
