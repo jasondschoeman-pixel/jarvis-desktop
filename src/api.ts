@@ -7,6 +7,11 @@ declare global {
       api: { request: (method: string, path: string, body?: any) => Promise<any> };
       kanban: { request: (method: string, path: string, body?: any) => Promise<any> };
       jobs: { request: (method: string, path: string, body?: any) => Promise<any> };
+      files: {
+        read: (filePath: string) => Promise<{ ok: boolean; content?: string; error?: string; size?: number; path?: string }>;
+        write: (filePath: string, content: string) => Promise<{ ok: boolean; error?: string; size?: number; path?: string }>;
+        list: (dirPath: string) => Promise<{ ok: boolean; entries?: any[]; error?: string }>;
+      };
       ws: { connect: (profile?: string) => Promise<any> };
       update: {
         check: () => Promise<any>;
@@ -18,7 +23,7 @@ declare global {
 }
 
 export class HermesAPI {
-  private get jarvis() { return window.jarvis; }
+  get jarvis() { return window.jarvis; }
 
   // Dashboard REST (9120) — cookie auth via IPC
   async getProfiles() { return this.jarvis.api.request('GET', '/api/profiles'); }
@@ -49,6 +54,11 @@ export class HermesAPI {
   async getKanbanStats(board: string) { return this.jarvis.kanban.request('GET', `/api/stats?board=${board}`); }
   async createKanbanTask(title: string, board: string) { return this.jarvis.kanban.request('POST', '/api/tasks', { title, board }); }
   async completeKanbanTask(taskId: string) { return this.jarvis.kanban.request('POST', `/api/tasks/${taskId}/complete`); }
+
+  // File operations (direct filesystem via IPC)
+  async readFile(filePath: string) { return this.jarvis.files.read(filePath); }
+  async writeFile(filePath: string, content: string) { return this.jarvis.files.write(filePath, content); }
+  async listDir(dirPath: string) { return this.jarvis.files.list(dirPath); }
 }
 
 export const api = new HermesAPI();

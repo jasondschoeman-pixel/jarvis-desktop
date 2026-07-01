@@ -129,4 +129,64 @@ export interface UpdateStatus {
   percent?: number;
 }
 
-export type View = 'status' | 'chat' | 'memory' | 'skills' | 'jobs' | 'sessions' | 'kanban' | 'config' | 'webhooks' | 'settings';
+export type View = 'status' | 'chat' | 'memory' | 'skills' | 'jobs' | 'sessions' | 'kanban' | 'config' | 'webhooks' | 'settings'
+  | 'profiles' | 'soul' | 'goals' | 'personas' | 'mcp' | 'models' | 'spend' | 'documents' | 'subagents' | 'skill-workshop' | 'experts' | 'token-budget' | 'multi-chat' | 'computer' | 'claude-bridge';
+
+// ── Extended Profile (full data from /api/profiles) ──
+export interface FullProfile {
+  name: string;
+  path: string;
+  is_default: boolean;
+  model: string | null;
+  provider: string | null;
+  has_env: boolean;
+  skill_count: number;
+  gateway_running: boolean;
+  description: string;
+  description_auto: boolean;
+  has_alias: boolean;
+}
+
+// ── File read result ──
+export interface FileReadResult {
+  name: string;
+  path: string;
+  size: number;
+  mime_type: string;
+  data_url: string;
+}
+
+// ── Directory listing ──
+export interface DirEntry {
+  name: string;
+  path: string;
+  is_directory: boolean;
+  size: number | null;
+  mtime: number;
+  mime_type: string | null;
+}
+
+// ── MCP Server ──
+export interface McpServer {
+  command?: string;
+  url?: string;
+  args?: string[];
+  headers?: Record<string, string>;
+  enabled?: boolean;
+}
+
+// ── MoA Preset ──
+export interface MoaPreset {
+  reference_models: { provider: string; model: string }[];
+  aggregator: { provider: string; model: string };
+  reference_temperature: number;
+  aggregator_temperature: number;
+}
+
+// ── Model catalog entry ──
+export interface ModelCatalogEntry {
+  id: string;
+  provider: string;
+  context_length?: number;
+  [key: string]: any;
+}

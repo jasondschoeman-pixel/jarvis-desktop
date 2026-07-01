@@ -13,6 +13,11 @@ contextBridge.exposeInMainWorld('jarvis', {
   jobs: {
     request: (method, path, body) => ipcRenderer.invoke('jobs:request', { method, path, body }),
   },
+  files: {
+    read: (filePath) => ipcRenderer.invoke('file:read', filePath),
+    write: (filePath, content) => ipcRenderer.invoke('file:write', filePath, content),
+    list: (dirPath) => ipcRenderer.invoke('file:list', dirPath),
+  },
   ws: {
     connect: (profile) => ipcRenderer.invoke('ws:connect', { profile }),
   },

@@ -1,4 +1,4 @@
-// src/App.tsx — Jarvis Desktop Agentic OS
+// src/App.tsx — Jarvis Desktop Agentic OS v2.1.0
 import { useState, useEffect, useRef } from 'react';
 import type { View, Profile, KanbanTask, KanbanBoard, UpdateStatus, StatusInfo } from './types';
 import { useWebSocket } from './hooks/useWebSocket';
@@ -13,6 +13,21 @@ import { SkillsView } from './components/SkillsView';
 import { JobsView } from './components/JobsView';
 import { ConfigView } from './components/ConfigView';
 import { WebhooksView } from './components/WebhooksView';
+import { ProfilesView } from './components/ProfilesView';
+import { SoulEditorView } from './components/SoulEditorView';
+import { GoalsView } from './components/GoalsView';
+import { PersonasView } from './components/PersonasView';
+import { McpView } from './components/McpView';
+import { ModelsView } from './components/ModelsView';
+import { SpendView } from './components/SpendView';
+import { DocumentsView } from './components/DocumentsView';
+import { SubagentsView } from './components/SubagentsView';
+import { SkillWorkshopView } from './components/SkillWorkshopView';
+import { ExpertsView } from './components/ExpertsView';
+import { TokenBudgetView } from './components/TokenBudgetView';
+import { MultiChatView } from './components/MultiChatView';
+import { ComputerControlView } from './components/ComputerControlView';
+import { ClaudeBridgeView } from './components/ClaudeBridgeView';
 
 export default function App() {
   const [view, setView] = useState<View>('status');
@@ -53,22 +68,6 @@ export default function App() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
-  // Keyboard shortcuts: Ctrl+1..9 to switch views
-  useEffect(() => {
-    const views: View[] = ['status', 'chat', 'memory', 'skills', 'jobs', 'sessions', 'kanban', 'config', 'webhooks'];
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key >= '1' && e.key <= '9') {
-        const idx = parseInt(e.key) - 1;
-        if (idx < views.length) {
-          e.preventDefault();
-          setView(views[idx]);
-        }
-      }
-    }
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
 
   // Load kanban when view changes
   useEffect(() => {
@@ -122,12 +121,11 @@ export default function App() {
   return (
     <div className="app">
       <Sidebar
-        view={view}
-        setView={setView}
+        activeView={view}
+        onViewChange={setView}
         profiles={profiles}
         activeProfile={activeProfile}
-        switchProfile={handleSwitchProfile}
-        connected={connected}
+        onProfileChange={handleSwitchProfile}
       />
 
       <div className="main-content">
@@ -181,6 +179,21 @@ export default function App() {
         {view === 'jobs' && <JobsView />}
         {view === 'config' && <ConfigView />}
         {view === 'webhooks' && <WebhooksView />}
+        {view === 'profiles' && <ProfilesView activeProfile={activeProfile} onSwitchProfile={handleSwitchProfile} />}
+        {view === 'soul' && <SoulEditorView activeProfile={activeProfile} />}
+        {view === 'goals' && <GoalsView />}
+        {view === 'personas' && <PersonasView />}
+        {view === 'mcp' && <McpView />}
+        {view === 'models' && <ModelsView activeProfile={activeProfile} />}
+        {view === 'spend' && <SpendView />}
+        {view === 'documents' && <DocumentsView />}
+        {view === 'subagents' && <SubagentsView />}
+        {view === 'skill-workshop' && <SkillWorkshopView />}
+        {view === 'experts' && <ExpertsView />}
+        {view === 'token-budget' && <TokenBudgetView />}
+        {view === 'multi-chat' && <MultiChatView />}
+        {view === 'computer' && <ComputerControlView />}
+        {view === 'claude-bridge' && <ClaudeBridgeView />}
       </div>
     </div>
   );

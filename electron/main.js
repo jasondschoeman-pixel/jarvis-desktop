@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const http = require('http');
+const fs = require('fs');
 const { autoUpdater } = require('electron-updater');
 
 let mainWindow;
@@ -291,6 +292,45 @@ ipcMain.handle('jobs:request', async (event, { method, path, body }) => {
     return result.data;
   } catch (err) {
     return { error: err.message };
+  }
+});
+
+// ── File read/write IPC ─────────────────────────────────────────────────────
+
+ipcMain.handle('file:read', async (event, filePath) => {
+  try {
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const stats = fs.statSync(filePath);
+    return { ok: true, content, size: stats.size, path: filePath };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle('file:write', async (event, filePath, content) => {
+  try {
+    fs.writeFileSync(filePath, content, 'utf-8');
+    const stats = fs.statSync(filePath);
+    return { ok: true, size: stats.size, path: filePath };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle('file:list', async (event, dirPath) => {
+  try {
+    const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+    return {
+      ok: true,
+      entries: entries.map(e => ({
+        name: e.name,
+        path: path.join(dirPath, e.name),
+        is_directory: e.isDirectory(),
+        size: e.isFile() ? fs.statSync(path.join(dirPath, e.name)).size : null,
+      })),
+    };
+  } catch (err) {
+    return { ok: false, error: err.message };
   }
 });
 
