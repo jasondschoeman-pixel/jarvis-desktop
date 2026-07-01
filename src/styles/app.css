@@ -1291,3 +1291,30 @@ html, body, #root {
 .job-btn:hover { background: var(--bg-hover); border-color: var(--accent); }
 .job-btn.delete:hover { border-color: var(--red); color: var(--red); }
 .job-btn.run:hover { border-color: var(--yellow); color: var(--yellow); }
+
+/* ── Sessions View Enhanced ───────────────────────────────────────────────── */
+.sessions-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.sessions-filter, .sessions-search {
+  padding: 6px 10px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 13px;
+}
+.sessions-filter:focus, .sessions-search:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.sessions-search { min-width: 200px; }
+.session-source {
+  background: rgba(108, 92, 231, 0.2);
+  color: var(--accent);
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-size: 11px;
+}
