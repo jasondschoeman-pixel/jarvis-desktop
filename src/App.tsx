@@ -12,6 +12,7 @@ import { MemoryView } from './components/MemoryView';
 import { SkillsView } from './components/SkillsView';
 import { JobsView } from './components/JobsView';
 import { ConfigView } from './components/ConfigView';
+import { WebhooksView } from './components/WebhooksView';
 
 export default function App() {
   const [view, setView] = useState<View>('status');
@@ -52,6 +53,22 @@ export default function App() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Keyboard shortcuts: Ctrl+1..9 to switch views
+  useEffect(() => {
+    const views: View[] = ['status', 'chat', 'memory', 'skills', 'jobs', 'sessions', 'kanban', 'config', 'webhooks'];
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key >= '1' && e.key <= '9') {
+        const idx = parseInt(e.key) - 1;
+        if (idx < views.length) {
+          e.preventDefault();
+          setView(views[idx]);
+        }
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   // Load kanban when view changes
   useEffect(() => {
@@ -163,7 +180,7 @@ export default function App() {
         {view === 'skills' && <SkillsView />}
         {view === 'jobs' && <JobsView />}
         {view === 'config' && <ConfigView />}
-        {view === 'webhooks' && <div className="empty-view"><h2>Webhooks</h2><p>Coming in Phase 6</p></div>}
+        {view === 'webhooks' && <WebhooksView />}
       </div>
     </div>
   );

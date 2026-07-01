@@ -1411,3 +1411,41 @@ html, body, #root {
   font-weight: 500;
   flex: 1;
 }
+
+/* ── Webhooks View ────────────────────────────────────────────────────────── */
+.webhooks-view {
+  padding: 24px;
+  overflow-y: auto;
+  height: 100%;
+}
+.webhooks-header { margin-bottom: 20px; }
+.webhooks-header h2 { margin: 0; }
+.webhooks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.webhook-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+}
+.webhook-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.webhook-name { font-weight: 600; }
+.webhook-url {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--teal);
+  word-break: break-all;
+}
+.webhook-event, .webhook-target {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
