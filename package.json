@@ -1,6 +1,6 @@
 {
   "name": "jarvis-desktop",
-  "version": "2.1.0",
+  "version": "2.1.2",
   "description": "Jarvis Desktop - Connect to your Hermes agent from a native app",
   "main": "electron/main.js",
   "scripts": {
