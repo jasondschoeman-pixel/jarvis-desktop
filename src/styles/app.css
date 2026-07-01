@@ -1318,3 +1318,96 @@ html, body, #root {
   border-radius: 8px;
   font-size: 11px;
 }
+
+/* ── Config View ──────────────────────────────────────────────────────────── */
+.config-view {
+  padding: 24px;
+  overflow-y: auto;
+  height: 100%;
+}
+.config-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.config-header h2 { margin: 0; }
+.config-search {
+  flex: 1;
+  max-width: 400px;
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 14px;
+}
+.config-search:focus { outline: none; border-color: var(--accent); }
+.config-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.config-section-item {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.config-key-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  cursor: default;
+}
+.config-key-row.expandable { cursor: pointer; }
+.config-key-row.expandable:hover { background: var(--bg-hover); }
+.config-chevron {
+  font-size: 10px;
+  color: var(--text-muted);
+  width: 12px;
+}
+.config-key {
+  font-weight: 600;
+  font-size: 13px;
+  font-family: var(--font-mono);
+  color: var(--accent);
+  flex: 1;
+}
+.config-value {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+  max-width: 400px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.config-string { color: var(--teal); }
+.config-number { color: var(--yellow); }
+.config-bool-true { color: var(--green); }
+.config-bool-false { color: var(--red); }
+.config-null { color: var(--text-muted); font-style: italic; }
+.config-other { color: var(--text-secondary); }
+.config-nested {
+  padding: 0 14px 8px 34px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.config-sub-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+}
+.config-sub-row:hover { background: var(--bg-tertiary); }
+.config-sub-key {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  flex: 1;
+}
