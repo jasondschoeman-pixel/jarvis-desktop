@@ -10,6 +10,9 @@ contextBridge.exposeInMainWorld('jarvis', {
   kanban: {
     request: (method, path, body) => ipcRenderer.invoke('kanban:request', { method, path, body }),
   },
+  jobs: {
+    request: (method, path, body) => ipcRenderer.invoke('jobs:request', { method, path, body }),
+  },
   ws: {
     connect: (profile) => ipcRenderer.invoke('ws:connect', { profile }),
   },

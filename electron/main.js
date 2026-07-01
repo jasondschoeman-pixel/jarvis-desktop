@@ -261,6 +261,36 @@ ipcMain.handle('ws:connect', async (event, { profile } = {}) => {
   }
 });
 
+// ── Jobs API (port 8642) ───────────────────────────────────────────────────────
+
+let apiServerKey = '';
+
+async function fetchApiServerKey() {
+  try {
+    const config = await apiWithCookies('192.168.1.50', 9120, dashboardCookies, 'GET', '/api/config');
+    if (config?.api_server_key) apiServerKey = config.api_server_key;
+    else if (config?.API_SERVER_KEY) apiServerKey = config.API_SERVER_KEY;
+  } catch (err) {
+    console.error('Failed to fetch API server key:', err.message);
+  }
+}
+
+ipcMain.handle('jobs:request', async (event, { method, path, body }) => {
+  try {
+    const url = new URL(path, 'http://192.168.1.50:8642');
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiServerKey}`,
+    };
+    const bodyStr = body ? JSON.stringify(body) : null;
+    if (bodyStr) headers['Content-Length'] = Buffer.byteLength(bodyStr);
+    const result = await httpRequest(method, url.hostname, parseInt(url.port), url.pathname + url.search, headers, bodyStr);
+    return result.data;
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
 // ── App lifecycle ────────────────────────────────────────────────────────────
 
 app.whenReady().then(async () => {
@@ -273,6 +303,9 @@ app.whenReady().then(async () => {
   } catch (err) {
     console.error('Auth failed:', err.message);
   }
+
+  // Fetch API server key for Jobs API
+  await fetchApiServerKey();
 
   createWindow();
 
