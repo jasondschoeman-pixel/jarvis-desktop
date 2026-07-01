@@ -8,6 +8,8 @@ import { KanbanView } from './components/KanbanView';
 import { SessionsView } from './components/SessionsView';
 import { SettingsView } from './components/SettingsView';
 import { StatusView } from './components/StatusView';
+import { MemoryView } from './components/MemoryView';
+import { SkillsView } from './components/SkillsView';
 
 export default function App() {
   const [view, setView] = useState<View>('status');
@@ -155,8 +157,8 @@ export default function App() {
             onInstallUpdate={() => window.jarvis.update?.install()}
           />
         )}
-        {view === 'memory' && <div className="empty-view"><h2>Memory</h2><p>Coming in Phase 2</p></div>}
-        {view === 'skills' && <div className="empty-view"><h2>Skills</h2><p>Coming in Phase 2</p></div>}
+        {view === 'memory' && <MemoryView />}
+        {view === 'skills' && <SkillsView />}
         {view === 'jobs' && <div className="empty-view"><h2>Jobs</h2><p>Coming in Phase 3</p></div>}
         {view === 'config' && <div className="empty-view"><h2>Config</h2><p>Coming in Phase 5</p></div>}
         {view === 'webhooks' && <div className="empty-view"><h2>Webhooks</h2><p>Coming in Phase 6</p></div>}

@@ -80,6 +80,10 @@ export interface MemoryProvider {
 export interface MemoryInfo {
   active: string;
   providers: MemoryProvider[];
+  builtin_files?: {
+    memory: number;
+    user: number;
+  };
 }
 
 export interface CronJob {
