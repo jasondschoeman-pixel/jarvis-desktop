@@ -9,5 +9,22 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    proxy: {
+      '/hermes-api': {
+        target: 'http://192.168.1.50:9120',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/hermes-api/, ''),
+      },
+      '/hermes-ws': {
+        target: 'http://192.168.1.50:9119',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/hermes-ws/, ''),
+      },
+      '/hermes-jobs': {
+        target: 'http://192.168.1.50:8642',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/hermes-jobs/, ''),
+      },
+    },
   },
 });

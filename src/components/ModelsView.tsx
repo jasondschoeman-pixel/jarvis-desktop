@@ -58,7 +58,7 @@ export function ModelsView({ activeProfile }: { activeProfile: string }) {
             <div key={i} className="model-card">
               <div className="model-card-name">{p.name}</div>
               <div className="model-card-url">{p.base_url}</div>
-              {p.models && <div className="model-card-models">{p.models.join(', ')}</div>}
+              {p.models && typeof p.models === 'object' && <div className="model-card-models">{Object.keys(p.models).join(', ')}</div>}
             </div>
           ))}
           {customFiltered.length === 0 && <div className="empty-state">No custom providers</div>}

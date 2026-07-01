@@ -1656,3 +1656,9 @@ html, body, #root {
 .computer-row label, .bridge-row label { color: var(--text-secondary); min-width: 160px; }
 .computer-list, .bridge-list { padding-left: 20px; margin: 8px 0; }
 .computer-list li, .bridge-list li { margin-bottom: 4px; font-size: 13px; color: var(--text-secondary); }
+
+/* Error Boundary */
+.view-error { padding: 40px; text-align: center; }
+.view-error h2 { color: var(--red, #e74c3c); margin-bottom: 12px; }
+.view-error-msg { color: var(--text-secondary); font-size: 14px; margin-bottom: 16px; font-family: var(--font-mono); }
+.retry-btn { padding: 8px 20px; background: var(--accent); color: white; border: none; border-radius: var(--radius-sm); cursor: pointer; font-size: 14px; }

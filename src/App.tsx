@@ -28,6 +28,7 @@ import { TokenBudgetView } from './components/TokenBudgetView';
 import { MultiChatView } from './components/MultiChatView';
 import { ComputerControlView } from './components/ComputerControlView';
 import { ClaudeBridgeView } from './components/ClaudeBridgeView';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 export default function App() {
   const [view, setView] = useState<View>('status');
@@ -129,6 +130,7 @@ export default function App() {
       />
 
       <div className="main-content">
+        <ErrorBoundary viewName={view}>
         {view === 'status' && <StatusView />}
         {view === 'chat' && (
           <ChatView
@@ -194,6 +196,7 @@ export default function App() {
         {view === 'multi-chat' && <MultiChatView />}
         {view === 'computer' && <ComputerControlView />}
         {view === 'claude-bridge' && <ClaudeBridgeView />}
+        </ErrorBoundary>
       </div>
     </div>
   );

@@ -60,8 +60,8 @@ export function TokenBudgetView() {
 
       <div className="budget-section">
         <h3>Tool Loop Guardrails</h3>
-        <div className="budget-row"><label>Warnings:</label><span>{toolLoop?.warnings_enabled ? '✅' : '❌'} (after {toolLoop?.warn_after ?? '—'} calls)</span></div>
-        <div className="budget-row"><label>Hard Stop:</label><span>{toolLoop?.hard_stop_enabled ? '✅' : '❌'} (after {toolLoop?.hard_stop_after ?? '—'} calls)</span></div>
+        <div className="budget-row"><label>Warnings:</label><span>{toolLoop?.warnings_enabled ? '✅' : '❌'} (after {JSON.stringify(toolLoop?.warn_after) ?? '—'} calls)</span></div>
+        <div className="budget-row"><label>Hard Stop:</label><span>{toolLoop?.hard_stop_enabled ? '✅' : '❌'} (after {JSON.stringify(toolLoop?.hard_stop_after) ?? '—'} calls)</span></div>
       </div>
 
       <div className="budget-section">
