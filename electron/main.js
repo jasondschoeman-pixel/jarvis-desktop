@@ -263,15 +263,18 @@ ipcMain.handle('ws:connect', async (event, { profile } = {}) => {
 
 // ── Jobs API (port 8642) ───────────────────────────────────────────────────────
 
-let apiServerKey = '';
+let apiServerKey = 'ch-local-gateway';
 
 async function fetchApiServerKey() {
   try {
     const config = await apiWithCookies('192.168.1.50', 9120, dashboardCookies, 'GET', '/api/config');
     if (config?.api_server_key) apiServerKey = config.api_server_key;
-    else if (config?.API_SERVER_KEY) apiServerKey = config.API_SERVER_KEY;
+    else if (config?.API_SERVER_KEY) apiServerKey = config.API_SERVER_SERVER_KEY;
+    // Key may also be in gateway.api_server.extra.key
+    const gwKey = config?.gateway?.api_server?.extra?.key;
+    if (gwKey) apiServerKey = gwKey;
   } catch (err) {
-    console.error('Failed to fetch API server key:', err.message);
+    console.error('Failed to fetch API server key, using default:', err.message);
   }
 }
 

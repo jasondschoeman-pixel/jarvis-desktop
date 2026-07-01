@@ -10,6 +10,7 @@ import { SettingsView } from './components/SettingsView';
 import { StatusView } from './components/StatusView';
 import { MemoryView } from './components/MemoryView';
 import { SkillsView } from './components/SkillsView';
+import { JobsView } from './components/JobsView';
 
 export default function App() {
   const [view, setView] = useState<View>('status');
@@ -159,7 +160,7 @@ export default function App() {
         )}
         {view === 'memory' && <MemoryView />}
         {view === 'skills' && <SkillsView />}
-        {view === 'jobs' && <div className="empty-view"><h2>Jobs</h2><p>Coming in Phase 3</p></div>}
+        {view === 'jobs' && <JobsView />}
         {view === 'config' && <div className="empty-view"><h2>Config</h2><p>Coming in Phase 5</p></div>}
         {view === 'webhooks' && <div className="empty-view"><h2>Webhooks</h2><p>Coming in Phase 6</p></div>}
       </div>

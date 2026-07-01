@@ -1145,3 +1145,149 @@ html, body, #root {
 .skill-enabled-badge.on { background: rgba(0, 184, 148, 0.2); color: var(--green); }
 .skill-enabled-badge.off { background: rgba(214, 48, 49, 0.2); color: var(--red); }
 .skill-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.4; }
+
+/* ── Jobs View ─────────────────────────────────────────────────────────────── */
+.jobs-view {
+  padding: 24px;
+  overflow-y: auto;
+  height: 100%;
+}
+.jobs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.jobs-header h2 { margin: 0; }
+.create-btn {
+  padding: 8px 16px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+.create-btn:hover { background: var(--accent-hover); }
+.job-create-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.job-create-form input, .job-create-form textarea, .job-create-form select {
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: var(--font);
+}
+.job-create-form textarea { font-family: var(--font-mono); resize: vertical; }
+.job-create-form input:focus, .job-create-form textarea:focus, .job-create-form select:focus {
+  outline: none; border-color: var(--accent);
+}
+.create-confirm-btn {
+  padding: 8px 16px;
+  background: var(--green);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  align-self: flex-start;
+}
+.jobs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.job-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+.job-card.disabled { opacity: 0.6; }
+.job-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.job-name { font-weight: 700; font-size: 15px; }
+.job-state {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  text-transform: uppercase;
+}
+.job-state-scheduled { background: rgba(0, 206, 201, 0.2); color: var(--teal); }
+.job-state-running { background: rgba(253, 203, 110, 0.2); color: var(--yellow); }
+.job-state-paused { background: rgba(85, 85, 112, 0.3); color: var(--text-muted); }
+.job-state-error { background: rgba(214, 48, 49, 0.2); color: var(--red); }
+.job-card-schedule {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+.job-runs { color: var(--text-muted); }
+.job-card-prompt {
+  font-size: 13px;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+  line-height: 1.4;
+  font-family: var(--font-mono);
+}
+.job-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+.job-last-status { font-weight: 600; }
+.job-last-ok { color: var(--green); }
+.job-last-error { color: var(--red); }
+.job-card-times {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.job-card-error {
+  font-size: 12px;
+  color: var(--red);
+  background: rgba(214, 48, 49, 0.1);
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+}
+.job-actions {
+  display: flex;
+  gap: 8px;
+}
+.job-btn {
+  padding: 5px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 13px;
+}
+.job-btn:hover { background: var(--bg-hover); border-color: var(--accent); }
+.job-btn.delete:hover { border-color: var(--red); color: var(--red); }
+.job-btn.run:hover { border-color: var(--yellow); color: var(--yellow); }
